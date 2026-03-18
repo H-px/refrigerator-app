@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>我的冰箱 🧊</title>
+  
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="manifest" href="manifest.json" />
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js');
+      });
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* --- CSS TOKENS (LIGHT DEFAULT) --- */
+    :root {
+      --bg-primary: #F0F4F8;     
+      --bg-gradient-1: rgba(255, 255, 255, 0.9);
+      --bg-gradient-2: rgba(226, 232, 240, 0.5);
+      
+      --glass-bg: rgba(255, 255, 255, 0.75); 
+      --glass-bg-solid: rgba(255,255,255,0.95);
+      --glass-border: rgba(255, 255, 255, 0.8);
+      --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+      
+      --color-safe: hsl(150, 70%, 40%);
+      --color-safe-glow: rgba(46, 184, 114, 0.15);
+      --color-warning: hsl(35, 95%, 50%);
+      --color-warning-glow: rgba(245, 158, 11, 0.15);
+      --color-danger: hsl(350, 80%, 55%);
+      --color-danger-glow: rgba(239, 68, 68, 0.15);
+      
+      --text-title: #1E293B;       
+      --text-primary: #334155;     
+      --text-secondary: #64748B;   
+      
+      --btn-bg: #fff;
+      --btn-active-bg: #F1F5F9;
+      --btn-accent: #3B82F6;
+      --input-bg: rgba(255, 255, 255, 0.9);
+      --input-border: rgba(148, 163, 184, 0.2);
+    }
+
+    /* --- CSS TOKENS (DARK MODE) --- */
+    [data-theme="dark"] {
+      --bg-primary: #0F172A;     
+      --bg-gradient-1: rgba(30, 41, 59, 1);
+      --bg-gradient-2: rgba(15, 23, 42, 1);
+      
+      --glass-bg: rgba(30, 41, 59, 0.7); 
+      --glass-bg-solid: rgba(30,41,59,0.95);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      
+      --color-safe: hsl(150, 60%, 45%);
+      --color-safe-glow: rgba(46, 184, 114, 0.2);
+      --color-warning: hsl(40, 90%, 55%);
+      --color-warning-glow: rgba(245, 158, 11, 0.2);
+      --color-danger: hsl(350, 80%, 60%);
+      --color-danger-glow: rgba(239, 68, 68, 0.3);
+      
+      --text-title: #F8FAFC;       
+      --text-primary: #E2E8F0;     
+      --text-secondary: #94A3B8;
+      
+      --btn-bg: rgba(255,255,255,0.05);
+      --btn-active-bg: rgba(255,255,255,0.15);
+      --btn-accent: #3B82F6;
+      --input-bg: rgba(15, 23, 42, 0.5);
+      --input-border: rgba(255, 255, 255, 0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-primary);
+      background-image: 
+        radial-gradient(circle at 15% 50%, var(--bg-gradient-1), transparent 25%),
+        radial-gradient(circle at 85% 30%, var(--bg-gradient-2), transparent 25%);
+      background-attachment: fixed;
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      line-height: 1.5;
+      transition: background-color 0.4s ease, color 0.4s ease;
+    }
+
+    #root { width: 100%; max-width: 480px; min-height: 100vh; position: relative; display: flex; flex-direction: column; }
+
+    .glass-panel {
+      background: var(--glass-bg); 
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border); 
+      box-shadow: var(--glass-shadow);
+      transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .anim-enter { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .anim-fade { animation: fadeIn 0.3s ease forwards; }
+
+    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; transition: all 0.2s; }
+    button:active { transform: scale(0.96); }
+    
+    input, select {
+      font-family: inherit; 
+      background: var(--input-bg); 
+      border: 1px solid var(--input-border);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+      color: var(--text-title); 
+      padding: 14px 16px; 
+      border-radius: 10px; 
+      font-size: 16px; width: 100%; outline: none; transition: all 0.2s;
+    }
+    input:focus { border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    input::placeholder { color: var(--text-secondary); }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    const STORAGE_KEY = 'refrigerator_foods_v2';
+    const THEME_KEY = 'refrigerator_theme';
+
+    const getFoods = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; } };
+    const saveFoods = (foods) => localStorage.setItem(STORAGE_KEY, JSON.stringify(foods));
+    
+    const getTheme = () => localStorage.getItem(THEME_KEY) || 'light';
+    const saveTheme = (theme) => {
+      localStorage.setItem(THEME_KEY, theme);
+      document.documentElement.setAttribute('data-theme', theme);
+    };
+
+    const getDaysDifference = (targetDate) => {
+      const now = new Date(); now.setHours(0, 0, 0, 0);
+      const target = new Date(targetDate); target.setHours(0, 0, 0, 0);
+      return Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+    };
+    const getFreshnessStatus = (days) => days < 0 ? 'danger' : days <= 3 ? 'warning' : 'safe';
+    const formatDate = (ds) => new Date(ds).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+
+    const QUICK_PICKS = [
+      { icon: '🥚', name: '鸡蛋', days: 14, loc: 'fridge' },
+      { icon: '🥛', name: '牛奶', days: 7, loc: 'fridge' },
+      { icon: '🥩', name: '鲜肉', days: 3, loc: 'fridge' },
+      { icon: '🥬', name: '绿叶菜', days: 4, loc: 'fridge' },
+      { icon: '🧊', name: '冷冻肉', days: 90, loc: 'freezer' },
+    ];
+
+    function Header({ stats, theme, toggleTheme }) {
+      return (
+        <header className="glass-panel" style={{ margin: '20px 20px 10px', padding: '20px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h1 style={{ fontSize: '24px', margin: 0, fontWeight: 700, color: 'var(--text-title)' }}>我的冰箱 ☁️</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button onClick={toggleTheme} style={{ fontSize: '20px', background: 'var(--btn-bg)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+                {theme === 'light' ? '🌙' : '☀️'}
+              </button>
+              <button onClick={() => stats.onOpenSettings()} style={{ fontSize: '20px', background: 'var(--btn-bg)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+                ⚙️
+              </button>
+              <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, background: 'var(--btn-bg)', padding: '6px 12px', borderRadius: '12px' }}>共 {stats.total} 件</span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {['danger', 'warning', 'safe'].map((s) => {
+              const titles = { danger: '已过期', warning: '快吃掉', safe: '很新鲜' };
+              if (stats[s] === 0 && s === 'danger') return null; 
+              return (
+                <div key={s} style={{ flex: 1, padding: '12px 8px', borderRadius: '10px', background: `var(--color-${s}-glow)`, textAlign: 'center', opacity: stats[s] === 0 ? 0.5 : 1 }}>
+                  <div style={{ color: `var(--color-${s})`, fontWeight: '700', fontSize: '20px', lineHeight: 1 }}>{stats[s]}</div>
+                  <div style={{ fontSize: '12px', color: `var(--color-${s})`, marginTop: '4px', fontWeight: 600, opacity: 0.8 }}>{titles[s]}</div>
+                </div>
+              )
+            })}
+          </div>
+        </header>
+      );
+    }
+
+    function Tabs({ activeTab, onTabChange, counts }) {
+      const tabs = [
+        { id: 'all', label: '全部' },
+        { id: 'fridge', label: '冷藏 ❄️' },
+        { id: 'freezer', label: '冷冻 🧊' },
+        { id: 'pantry', label: '室温 🥫' }
+      ];
+      
+      return (
+        <div className="no-scrollbar" style={{ display: 'flex', gap: '8px', padding: '0 20px 12px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          {tabs.map(tab => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button 
+                key={tab.id} 
+                onClick={() => onTabChange(tab.id)}
+                style={{
+                  padding: '8px 16px', borderRadius: '20px', whiteSpace: 'nowrap', fontSize: '14px', fontWeight: isActive ? 600 : 500,
+                  background: isActive ? 'var(--btn-bg)' : 'transparent',
+                  color: isActive ? 'var(--text-title)' : 'var(--text-secondary)',
+                  boxShadow: isActive ? '0 2px 10px rgba(0,0,0,0.05)' : 'none',
+                  border: isActive ? '1px solid var(--glass-border)' : '1px solid transparent',
+                  display: 'flex', alignItems: 'center', gap: '6px'
+                }}
+              >
+                {tab.label} {counts[tab.id] > 0 && <span style={{ background: isActive ? 'var(--btn-active-bg)' : 'var(--btn-bg)', padding: '2px 6px', borderRadius: '10px', fontSize: '12px' }}>{counts[tab.id]}</span>}
+              </button>
+            )
+          })}
+        </div>
+      );
+    }
+
+    function FoodCard({ food, onDelete, onEdit }) {
+      const diffDays = getDaysDifference(food.expiryDate);
+      const status = getFreshnessStatus(diffDays);
+      const config = {
+        danger: { color: 'var(--color-danger)', bg: 'var(--color-danger-glow)', label: diffDays === 0 ? '今天到期' : `已过期 ${Math.abs(diffDays)}天` },
+        warning: { color: 'var(--color-warning)', bg: 'var(--color-warning-glow)', label: `剩 ${diffDays} 天` },
+        safe: { color: 'var(--color-safe)', bg: 'var(--color-safe-glow)', label: `剩 ${diffDays} 天` }
+      }[status];
+      const locIcon = { fridge: '❄️', freezer: '🧊', pantry: '🥫' }[food.location] || '📦';
+
+      return (
+        <div className="glass-panel anim-enter" style={{ padding: '16px', borderRadius: '16px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', backgroundColor: config.color }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', paddingLeft: '8px', flex: 1, minWidth: 0 }}>
+            <div style={{ width: '44px', height: '44px', flexShrink: 0, borderRadius: '12px', background: 'var(--btn-bg)', boxShadow: '0 2px 5px rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>{locIcon}</div>
+            <div style={{ minWidth: 0 }}>
+              <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', color: 'var(--text-title)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{food.name}</h3>
+              <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)' }}>买于 {formatDate(food.createdAt)}</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, marginLeft: '8px' }}>
+            <div style={{ padding: '6px 10px', borderRadius: '8px', background: config.bg, color: config.color, fontSize: '13px', fontWeight: '700', whiteSpace: 'nowrap' }}>{config.label}</div>
+            <button onClick={() => onEdit(food)} title="编辑" style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--btn-bg)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.04)' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            </button>
+            <button onClick={() => onDelete(food.id)} title="标记为已食用" style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--btn-bg)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.04)' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    function SettingsSheet({ foods, onImport, onClose }) {
+      const exportData = () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(foods));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href",     dataStr);
+        downloadAnchorNode.setAttribute("download", `my_fridge_backup_${new Date().toISOString().slice(0,10)}.json`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+      };
+
+      const handleImport = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const imported = JSON.parse(e.target.result);
+            if (Array.isArray(imported)) {
+              if (confirm(`确认导入 ${imported.length} 条数据吗？这将与现有数据合并。`)) {
+                onImport(imported);
+              }
+            }
+          } catch (err) {
+            alert('导入失败：文件格式不正确');
+          }
+        };
+        reader.readAsText(file);
+      };
+
+      return (
+        <div className="anim-fade" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={onClose}>
+          <div className="glass-panel anim-enter" style={{ width: '100%', maxWidth: '400px', padding: '24px', borderRadius: '24px', background: 'var(--glass-bg-solid)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '20px', color: 'var(--text-title)', fontWeight: 700 }}>设置与数据 ⚙️</h2>
+              <button onClick={onClose} style={{ width: '32px', height: '32px', borderRadius: '16px', background: 'var(--btn-active-bg)', color: 'var(--text-secondary)' }}>✕</button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <button onClick={exportData} style={{ padding: '14px', borderRadius: '12px', background: 'var(--btn-bg)', border: '1px solid var(--glass-border)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                📤 导出备份 (JSON)
+              </button>
+              
+              <label style={{ padding: '14px', borderRadius: '12px', background: 'var(--btn-bg)', border: '1px solid var(--glass-border)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}>
+                📥 导入备份
+                <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
+              </label>
+
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', marginTop: '10px' }}>
+                <p>所有数据均保存在本地浏览器中。</p>
+                <p>导出文件可用于在其他设备上恢复。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function FoodFormSheet({ title, initialName, initialExpiryDate, initialLocation, submitLabel, onClose, onSubmit }) {
+      // Helper: get remaining days from an ISO date string
+      const toRemainingDays = (iso) => {
+        const diff = getDaysDifference(iso);
+        return diff >= 0 ? diff : 0;
+      };
+
+      const [name, setName] = useState(initialName || '');
+      const [days, setDays] = useState(initialExpiryDate ? toRemainingDays(initialExpiryDate) : 3);
+      const [location, setLocation] = useState(initialLocation || 'fridge');
+      const [customDays, setCustomDays] = useState('');
+
+      const activeDays = customDays !== '' ? parseInt(customDays) || 0 : days;
+
+      const handleQuickPick = (item) => {
+        setName(item.name); setDays(item.days); setLocation(item.loc); setCustomDays('');
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!name.trim()) return;
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + activeDays);
+        onSubmit({ name: name.trim(), expiryDate: expiryDate.toISOString(), location });
+      };
+
+      const showQuickPicks = !initialName; // Only show for Add, not Edit
+
+      return (
+        <div className="anim-fade" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
+          <div className="glass-panel anim-enter" style={{ width: '100%', maxWidth: '480px', padding: '30px 24px', borderTopLeftRadius: '28px', borderTopRightRadius: '28px', borderBottom: 'none', background: 'var(--glass-bg-solid)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '22px', color: 'var(--text-title)', fontWeight: 700 }}>{title}</h2>
+              <button onClick={onClose} style={{ width: '32px', height: '32px', borderRadius: '16px', background: 'var(--btn-active-bg)', color: 'var(--text-secondary)', fontWeight: 'bold' }}>✕</button>
+            </div>
+            
+            {showQuickPicks && (
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>常用快捷选择</label>
+                <div className="no-scrollbar" style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
+                  {QUICK_PICKS.map(p => (
+                    <button key={p.name} type="button" onClick={() => handleQuickPick(p)}
+                      style={{ padding: '8px 14px', borderRadius: '12px', background: 'var(--btn-bg)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', fontWeight: 500, color: 'var(--text-primary)' }}
+                    >
+                      <span style={{ fontSize: '16px' }}>{p.icon}</span> {p.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>这是什么？</label>
+                <input type="text" placeholder="例如：半个西瓜..." value={name} onChange={e => setName(e.target.value)} required />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>还能放多少天？</label>
+                <div className="no-scrollbar" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                  {[1, 3, 5, 7, 14, 30].map(d => (
+                    <button key={d} type="button" onClick={() => { setDays(d); setCustomDays(''); }}
+                      style={{ padding: '10px 16px', borderRadius: '12px', whiteSpace: 'nowrap', fontWeight: 600, 
+                               background: activeDays === d && customDays === '' ? 'var(--btn-accent)' : 'var(--btn-active-bg)', 
+                               color: activeDays === d && customDays === '' ? '#fff' : 'var(--text-primary)',
+                               boxShadow: activeDays === d && customDays === '' ? '0 4px 12px rgba(59,130,246,0.3)' : 'none' }}
+                    >{d} 天</button>
+                  ))}
+                </div>
+                <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input type="number" min="1" max="3650" placeholder="或输入自定义天数" value={customDays}
+                    onChange={e => setCustomDays(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>放进哪里？</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {[{id: 'fridge', l: '冷藏 ❄️'}, {id: 'freezer', l: '冷冻 🧊'}, {id: 'pantry', l: '室温 🥫'}].map(loc => (
+                    <button key={loc.id} type="button" onClick={() => setLocation(loc.id)}
+                      style={{ flex: 1, padding: '12px 0', borderRadius: '12px', fontWeight: 600,
+                               background: location === loc.id ? 'var(--text-title)' : 'var(--btn-active-bg)', 
+                               color: location === loc.id ? 'var(--bg-primary)' : 'var(--text-primary)' }}
+                    >{loc.l}</button>
+                  ))}
+                </div>
+              </div>
+              <button type="submit" style={{ marginTop: '12px', padding: '16px', borderRadius: '16px', background: '#10B981', color: '#fff', fontWeight: '700', fontSize: '16px', boxShadow: '0 4px 15px rgba(16,185,129,0.3)' }}>{submitLabel}</button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [foods, setFoods] = useState([]);
+      const [isAddOpen, setIsAddOpen] = useState(false);
+      const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+      const [editingFood, setEditingFood] = useState(null);
+      const [activeTab, setActiveTab] = useState('all'); 
+      const [searchQuery, setSearchQuery] = useState('');
+      const [theme, setTheme] = useState(getTheme());
+
+      useEffect(() => { 
+        setFoods(getFoods()); 
+        document.documentElement.setAttribute('data-theme', theme);
+      }, []);
+
+      const toggleTheme = () => {
+        const newTheme = theme === 'light' ? 'dark' : 'light';
+        setTheme(newTheme);
+        saveTheme(newTheme);
+      };
+
+      const handleAdd = ({ name, expiryDate, location }) => {
+        const next = [{ id: Date.now().toString(), name, expiryDate, location, createdAt: new Date().toISOString() }, ...foods];
+        setFoods(next); saveFoods(next); setIsAddOpen(false);
+      };
+
+      const handleEdit = ({ name, expiryDate, location }) => {
+        const next = foods.map(f => f.id === editingFood.id ? { ...f, name, expiryDate, location } : f);
+        setFoods(next); saveFoods(next); setEditingFood(null);
+      };
+
+      const handleDelete = (id) => {
+        const next = foods.filter(f => f.id !== id);
+        setFoods(next); saveFoods(next);
+      };
+
+      const handleImport = (imported) => {
+        // Simple merge: avoid duplicate IDs
+        const existingIds = new Set(foods.map(f => f.id));
+        const newItems = imported.filter(item => !existingIds.has(item.id));
+        const next = [...newItems, ...foods];
+        setFoods(next);
+        saveFoods(next);
+        setIsSettingsOpen(false);
+      };
+
+      const stats = useMemo(() => {
+        const res = foods.reduce((acc, f) => {
+          const status = getFreshnessStatus(getDaysDifference(f.expiryDate));
+          acc[status]++; return acc;
+        }, { safe: 0, warning: 0, danger: 0, total: foods.length });
+        res.onOpenSettings = () => setIsSettingsOpen(true);
+        return res;
+      }, [foods]);
+
+      const counts = useMemo(() => foods.reduce((acc, f) => {
+        acc[f.location]++; return acc;
+      }, { all: foods.length, fridge: 0, freezer: 0, pantry: 0 }), [foods]);
+
+      const filteredFoods = useMemo(() => {
+        let result = foods;
+        if (activeTab !== 'all') {
+          result = foods.filter(f => f.location === activeTab);
+        }
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          result = result.filter(f => f.name.toLowerCase().includes(q));
+        }
+        return [...result].sort((a, b) => getDaysDifference(a.expiryDate) - getDaysDifference(b.expiryDate));
+      }, [foods, activeTab, searchQuery]);
+
+      return (
+        <div style={{ paddingBottom: '110px', display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Header stats={stats} theme={theme} toggleTheme={toggleTheme} />
+          
+          <div style={{ padding: '0 20px 16px' }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <span style={{ position: 'absolute', left: '14px', opacity: 0.5, fontSize: '18px' }}>🔍</span>
+              <input 
+                type="text" 
+                placeholder="搜索食材..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ paddingLeft: '44px', height: '48px', borderRadius: '14px', fontSize: '15px' }}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '12px', background: 'var(--btn-active-bg)', width: '24px', height: '24px', borderRadius: '12px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+              )}
+            </div>
+          </div>
+
+          <Tabs activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
+          
+          <main style={{ padding: '0 20px', flex: 1 }}>
+            {filteredFoods.length === 0 ? (
+              <div className="anim-fade" style={{ textAlign: 'center', marginTop: '40px', color: 'var(--text-secondary)' }}>
+                <div style={{ fontSize: '64px', opacity: 0.4, marginBottom: '16px' }}>
+                  {activeTab === 'freezer' ? '🧊' : activeTab === 'pantry' ? '🥫' : '🌬️'}
+                </div>
+                <p style={{ fontWeight: 500 }}>这里空空如也<br/>去买点东西塞进去吧</p>
+              </div>
+            ) : (
+              <div className="anim-fade" key={activeTab}>
+                {filteredFoods.map(f => <FoodCard key={f.id} food={f} onDelete={handleDelete} onEdit={setEditingFood} />)}
+              </div>
+            )}
+          </main>
+
+          <button 
+            onClick={() => setIsAddOpen(true)} 
+            style={{ 
+              position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)', 
+              height: '56px', padding: '0 32px', borderRadius: '28px', fontSize: '16px', fontWeight: 600, color: '#fff', zIndex: 100, 
+              display: 'flex', alignItems: 'center', gap: '8px',
+              background: 'var(--btn-accent)',
+              boxShadow: '0 8px 25px rgba(59,130,246,0.4)',
+              border: '2px solid rgba(255,255,255,0.2)'
+            }}
+          >
+            <span style={{ fontSize: '24px', lineHeight: 1 }}>+</span> 放入食材
+          </button>
+
+          {isAddOpen && (
+            <FoodFormSheet
+              title="存入新食物 🛒"
+              submitLabel="✅ 记入冰箱"
+              onClose={() => setIsAddOpen(false)}
+              onSubmit={handleAdd}
+            />
+          )}
+          {editingFood && (
+            <FoodFormSheet
+              title="✏️ 修改食物信息"
+              submitLabel="💾 保存修改"
+              initialName={editingFood.name}
+              initialExpiryDate={editingFood.expiryDate}
+              initialLocation={editingFood.location}
+              onClose={() => setEditingFood(null)}
+              onSubmit={handleEdit}
+            />
+          )}
+          {isSettingsOpen && (
+            <SettingsSheet 
+              foods={foods} 
+              onImport={handleImport} 
+              onClose={() => setIsSettingsOpen(false)} 
+            />
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
