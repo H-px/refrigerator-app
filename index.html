@@ -8,6 +8,14 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="manifest" href="manifest.json" />
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js');
+      });
+    }
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
@@ -164,6 +172,9 @@
               <button onClick={toggleTheme} style={{ fontSize: '20px', background: 'var(--btn-bg)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
                 {theme === 'light' ? '🌙' : '☀️'}
               </button>
+              <button onClick={() => stats.onOpenSettings()} style={{ fontSize: '20px', background: 'var(--btn-bg)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+                ⚙️
+              </button>
               <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, background: 'var(--btn-bg)', padding: '6px 12px', borderRadius: '12px' }}>共 {stats.total} 件</span>
             </div>
           </div>
@@ -244,6 +255,64 @@
             <button onClick={() => onDelete(food.id)} title="标记为已食用" style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--btn-bg)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.04)' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
             </button>
+          </div>
+        </div>
+      );
+    }
+
+    function SettingsSheet({ foods, onImport, onClose }) {
+      const exportData = () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(foods));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href",     dataStr);
+        downloadAnchorNode.setAttribute("download", `my_fridge_backup_${new Date().toISOString().slice(0,10)}.json`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+      };
+
+      const handleImport = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const imported = JSON.parse(e.target.result);
+            if (Array.isArray(imported)) {
+              if (confirm(`确认导入 ${imported.length} 条数据吗？这将与现有数据合并。`)) {
+                onImport(imported);
+              }
+            }
+          } catch (err) {
+            alert('导入失败：文件格式不正确');
+          }
+        };
+        reader.readAsText(file);
+      };
+
+      return (
+        <div className="anim-fade" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={onClose}>
+          <div className="glass-panel anim-enter" style={{ width: '100%', maxWidth: '400px', padding: '24px', borderRadius: '24px', background: 'var(--glass-bg-solid)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '20px', color: 'var(--text-title)', fontWeight: 700 }}>设置与数据 ⚙️</h2>
+              <button onClick={onClose} style={{ width: '32px', height: '32px', borderRadius: '16px', background: 'var(--btn-active-bg)', color: 'var(--text-secondary)' }}>✕</button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <button onClick={exportData} style={{ padding: '14px', borderRadius: '12px', background: 'var(--btn-bg)', border: '1px solid var(--glass-border)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                📤 导出备份 (JSON)
+              </button>
+              
+              <label style={{ padding: '14px', borderRadius: '12px', background: 'var(--btn-bg)', border: '1px solid var(--glass-border)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}>
+                📥 导入备份
+                <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
+              </label>
+
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', marginTop: '10px' }}>
+                <p>所有数据均保存在本地浏览器中。</p>
+                <p>导出文件可用于在其他设备上恢复。</p>
+              </div>
+            </div>
           </div>
         </div>
       );
@@ -346,8 +415,10 @@
     function App() {
       const [foods, setFoods] = useState([]);
       const [isAddOpen, setIsAddOpen] = useState(false);
+      const [isSettingsOpen, setIsSettingsOpen] = useState(false);
       const [editingFood, setEditingFood] = useState(null);
       const [activeTab, setActiveTab] = useState('all'); 
+      const [searchQuery, setSearchQuery] = useState('');
       const [theme, setTheme] = useState(getTheme());
 
       useEffect(() => { 
@@ -376,10 +447,24 @@
         setFoods(next); saveFoods(next);
       };
 
-      const stats = useMemo(() => foods.reduce((acc, f) => {
-        const status = getFreshnessStatus(getDaysDifference(f.expiryDate));
-        acc[status]++; return acc;
-      }, { safe: 0, warning: 0, danger: 0, total: foods.length }), [foods]);
+      const handleImport = (imported) => {
+        // Simple merge: avoid duplicate IDs
+        const existingIds = new Set(foods.map(f => f.id));
+        const newItems = imported.filter(item => !existingIds.has(item.id));
+        const next = [...newItems, ...foods];
+        setFoods(next);
+        saveFoods(next);
+        setIsSettingsOpen(false);
+      };
+
+      const stats = useMemo(() => {
+        const res = foods.reduce((acc, f) => {
+          const status = getFreshnessStatus(getDaysDifference(f.expiryDate));
+          acc[status]++; return acc;
+        }, { safe: 0, warning: 0, danger: 0, total: foods.length });
+        res.onOpenSettings = () => setIsSettingsOpen(true);
+        return res;
+      }, [foods]);
 
       const counts = useMemo(() => foods.reduce((acc, f) => {
         acc[f.location]++; return acc;
@@ -390,12 +475,33 @@
         if (activeTab !== 'all') {
           result = foods.filter(f => f.location === activeTab);
         }
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          result = result.filter(f => f.name.toLowerCase().includes(q));
+        }
         return [...result].sort((a, b) => getDaysDifference(a.expiryDate) - getDaysDifference(b.expiryDate));
-      }, [foods, activeTab]);
+      }, [foods, activeTab, searchQuery]);
 
       return (
         <div style={{ paddingBottom: '110px', display: 'flex', flexDirection: 'column', height: '100%' }}>
           <Header stats={stats} theme={theme} toggleTheme={toggleTheme} />
+          
+          <div style={{ padding: '0 20px 16px' }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <span style={{ position: 'absolute', left: '14px', opacity: 0.5, fontSize: '18px' }}>🔍</span>
+              <input 
+                type="text" 
+                placeholder="搜索食材..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ paddingLeft: '44px', height: '48px', borderRadius: '14px', fontSize: '15px' }}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '12px', background: 'var(--btn-active-bg)', width: '24px', height: '24px', borderRadius: '12px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+              )}
+            </div>
+          </div>
+
           <Tabs activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
           
           <main style={{ padding: '0 20px', flex: 1 }}>
@@ -444,6 +550,13 @@
               initialLocation={editingFood.location}
               onClose={() => setEditingFood(null)}
               onSubmit={handleEdit}
+            />
+          )}
+          {isSettingsOpen && (
+            <SettingsSheet 
+              foods={foods} 
+              onImport={handleImport} 
+              onClose={() => setIsSettingsOpen(false)} 
             />
           )}
         </div>
