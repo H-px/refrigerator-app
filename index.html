@@ -260,7 +260,7 @@
       );
     }
 
-    function SettingsSheet({ foods, onImport, onClose }) {
+    function SettingsSheet({ foods, onImport, onClose, onEnableNotifications }) {
       const exportData = () => {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(foods));
         const downloadAnchorNode = document.createElement('a');
@@ -307,6 +307,13 @@
                 📥 导入备份
                 <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
               </label>
+
+              <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>过期提醒</label>
+                <button onClick={onEnableNotifications} style={{ width: '100%', padding: '14px', borderRadius: '12px', background: Notification.permission === 'granted' ? 'var(--color-safe-glow)' : 'var(--btn-bg)', border: '1px solid var(--glass-border)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: Notification.permission === 'granted' ? 'var(--color-safe)' : 'var(--text-primary)' }}>
+                  {Notification.permission === 'granted' ? '✅ 通知已开启' : '🔔 开启到期提醒'}
+                </button>
+              </div>
 
               <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', marginTop: '10px' }}>
                 <p>所有数据均保存在本地浏览器中。</p>
@@ -422,8 +429,13 @@
       const [theme, setTheme] = useState(getTheme());
 
       useEffect(() => { 
-        setFoods(getFoods()); 
+        const loadedFoods = getFoods();
+        setFoods(loadedFoods); 
         document.documentElement.setAttribute('data-theme', theme);
+        // Auto-check and send notifications on load if permission was already granted
+        if (Notification.permission === 'granted') {
+          checkAndNotify(loadedFoods);
+        }
       }, []);
 
       const toggleTheme = () => {
@@ -455,6 +467,38 @@
         setFoods(next);
         saveFoods(next);
         setIsSettingsOpen(false);
+      };
+
+      const checkAndNotify = (foodList) => {
+        const expiringSoon = foodList.filter(f => {
+          const d = getDaysDifference(f.expiryDate);
+          return d >= 0 && d <= 3;
+        });
+        const expired = foodList.filter(f => getDaysDifference(f.expiryDate) < 0);
+
+        if (expiringSoon.length > 0) {
+          new Notification('冰箱提醒 🔔', {
+            body: `${expiringSoon.map(f => f.name).join('、')} 将在 3 天内过期！`,
+            icon: './refrigerator_app_icon.png',
+          });
+        }
+        if (expired.length > 0) {
+          new Notification('已过期食材 ⚠️', {
+            body: `${expired.map(f => f.name).join('、')} 已过期，请尽快处理。`,
+            icon: './refrigerator_app_icon.png',
+          });
+        }
+      };
+
+      const handleEnableNotifications = async () => {
+        if (!('Notification' in window)) {
+          alert('您的浏览器不支持推送通知');
+          return;
+        }
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          checkAndNotify(foods);
+        }
       };
 
       const stats = useMemo(() => {
@@ -557,6 +601,7 @@
               foods={foods} 
               onImport={handleImport} 
               onClose={() => setIsSettingsOpen(false)} 
+              onEnableNotifications={handleEnableNotifications}
             />
           )}
         </div>
