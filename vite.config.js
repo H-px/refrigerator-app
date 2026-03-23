@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['refrigerator_app_icon.png', 'favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
+      includeAssets: ['refrigerator_app_icon.png'],
       manifest: {
         name: '我的冰箱 🧊',
         short_name: '我的冰箱',
