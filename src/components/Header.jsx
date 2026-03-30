@@ -16,7 +16,7 @@ export function Header({ stats, theme, toggleTheme }) {
           <button onClick={stats.onOpenSettings} className="glass-panel" style={{ width: '40px', height: '40px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--btn-bg)' }}>
             ⚙️
           </button>
-          <div className="glass-panel" style={{ padding: '0 12px', height: '40px', borderRadius: '12px', display: 'flex', alignItems: 'center', fontSize: '13px', fontWeight: 600, color: var(--text-secondary) }}>
+          <div className="glass-panel" style={{ padding: '0 12px', height: '40px', borderRadius: '12px', display: 'flex', alignItems: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
             共 {stats.total} 件
           </div>
         </div>
