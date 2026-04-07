@@ -1,0 +1,1 @@
+{"name":"我的冰箱 🧊","short_name":"我的冰箱","start_url":"/refrigerator-app/","display":"standalone","background_color":"#ffffff","lang":"en","scope":"/refrigerator-app/","description":"冰箱库存管理与过期提取应用","theme_color":"#F0F4F8","icons":[{"src":"refrigerator_app_icon.png","sizes":"192x192","type":"image/png"},{"src":"refrigerator_app_icon.png","sizes":"512x512","type":"image/png"}]}

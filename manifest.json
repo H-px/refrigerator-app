@@ -1,0 +1,17 @@
+{
+  "name": "我的冰箱 🧊",
+  "short_name": "我的冰箱",
+  "description": "极简高效的冰箱食材管理工具",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F0F4F8",
+  "theme_color": "#3B82F6",
+  "icons": [
+    {
+      "src": "refrigerator_app_icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
